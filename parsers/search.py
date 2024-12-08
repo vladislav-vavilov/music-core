@@ -3,6 +3,8 @@ from config import yt
 from enum import Enum
 from dataclasses import dataclass
 
+from exceptions import ApiServiceError
+
 
 class SearchResultsItemType(Enum):
     SONG = 'song'
@@ -26,7 +28,7 @@ class SearchResultsItem:
     type: SearchResultsItemType
     id: str
     title: str
-    artsts: list[Artist]
+    artists: list[Artist]
     duration: str
     thumbnailURL: str
 
@@ -58,13 +60,17 @@ def search_spotify(query: str) -> list[SearchResultsItem]:
 
 
 def format_search_results_item(item) -> SearchResultsItem:
-    image_id = item['thumbnails'][0]['url'].split('/')[-1]
+    try:
+        image_id = item['thumbnails'][0]['url'].split('/')[-1]
 
-    return {
-        'type': item['resultType'],
-        'id': item['videoId'],
-        'title': item['title'],
-        'artists': item['artists'],
-        'duration': item['duration'],
-        'thumbnailURL': f'https://myserver.com/{image_id}'
-    }
+        return SearchResultsItem(
+                type=item['resultType'],
+                id=item['videoId'],
+                title=item['title'],
+                artists=item['artists'],
+                duration=item['duration'],
+                thumbnailURL=f'https://myserver.com/{image_id}'
+        )
+
+    except (IndexError, KeyError):
+        raise ApiServiceError
