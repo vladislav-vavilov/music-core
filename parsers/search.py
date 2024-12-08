@@ -2,6 +2,7 @@ from config import yt
 
 from enum import Enum
 from dataclasses import dataclass
+from typing import Any
 
 from exceptions import ApiServiceError
 
@@ -50,7 +51,7 @@ def search(query: str, search_source: SearchSource)\
 def search_youtube(query: str) -> list[SearchResultsItem]:
     search_results = yt.search(query, 'songs')
     formatted_search_results = list(
-        map(format_search_results_item, search_results))
+        map(_format_search_results_item, search_results))
 
     return formatted_search_results
 
@@ -59,18 +60,19 @@ def search_spotify(query: str) -> list[SearchResultsItem]:
     return search_youtube(query)
 
 
-def format_search_results_item(item) -> SearchResultsItem:
+def _format_search_results_item(response_item: dict[str, Any]) -> SearchResultsItem:
     try:
-        image_id = item['thumbnails'][0]['url'].split('/')[-1]
-
         return SearchResultsItem(
-                type=item['resultType'],
-                id=item['videoId'],
-                title=item['title'],
-                artists=item['artists'],
-                duration=item['duration'],
-                thumbnailURL=f'https://myserver.com/{image_id}'
+                type=response_item['resultType'],
+                id=response_item['videoId'],
+                title=response_item['title'],
+                artists=response_item['artists'],
+                duration=response_item['duration'],
+                thumbnailURL=f'https://myserver.com/{_parse_image_id(response_item)}'
         )
 
     except (IndexError, KeyError):
         raise ApiServiceError
+
+def _parse_image_id(response_item: dict[str, Any]) -> str:
+    return response_item['thumbnails'][0]['url'].split('/')[-1]
